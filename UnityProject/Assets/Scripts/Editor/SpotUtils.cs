@@ -59,7 +59,12 @@ class SpotUtilsWindow : EditorWindow
                 {
                     DestroyImmediate(spot);
                     clean_count++;
+                    continue;
                 }
+            
+                var existing_renderer = transform.gameObject.GetComponent<LineRenderer>();
+                if (existing_renderer)
+                    DestroyImmediate(existing_renderer);
             }
 
             if (clean_count == 0)
@@ -130,10 +135,10 @@ class SpotUtilsWindow : EditorWindow
         List<GameObject> objects = new List<GameObject>();
         foreach (Transform transform in root.transform)
         {
-            var existing_renderers = transform.gameObject.GetComponents<LineRenderer>();
-            foreach(var renderer in existing_renderers)
+            var existing_renderer = transform.gameObject.GetComponent<LineRenderer>();
+            if (existing_renderer)
             {
-                DestroyImmediate(renderer);
+                DestroyImmediate(existing_renderer);
             }
 
             objects.Add(transform.gameObject);

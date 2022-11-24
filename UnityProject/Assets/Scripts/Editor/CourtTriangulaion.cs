@@ -6,20 +6,18 @@ using UnityEngine;
 
 public class CourtTriangulaion
 {
-    // Tries to find the minimum-weight triangulation via a greedy method.
+    // Construct a pleasing triangulation of the player spots.
+    // The idea is to use the minimum-weight triangulation with
+    // edges that are too close in direction removed.
+    
     // https://en.wikipedia.org/wiki/Minimum-weight_triangulation
     //
-    // This might or might not be the best method for setting up links. But
-    // it's the easiest to implement.
     
 
     class LineRecord
     {
         public int idx0;    // Indices of the source points.
         public int idx1;
-
-        //public Vector2 pt0;
-        //public Vector2 pt1;
 
         public Vector2 center;  // For early out testing
         public float radius;
@@ -36,59 +34,15 @@ public class CourtTriangulaion
 
             center = points[i0] + delta * .5f;
             dir = delta.normalized;
-
-            //pt0 = points[i0];
-            //pt1 = points[i1];
-        }
-
-        public bool IsSame(in LineRecord other)
-        {
-            if ((center - other.center).sqrMagnitude > .001)
-                return false;
-            if (Math.Abs(radius - other.radius) > .01)
-                return false;
-            if ((dir - other.dir).sqrMagnitude > .001)
-            {
-                if ((dir + other.dir).sqrMagnitude > .001)
-                    return false;
-            }
-
-            return true;
         }
 
     }
     
-    static bool is_it(in LineRecord t0, in LineRecord t1)
-    {
-        Vector2[] l0 = new Vector2[] { new Vector2(5.5f, 0), new Vector2(4, 10) };
-        Vector2[] l1 = new Vector2[] { new Vector2(0, 0), new Vector2(16, 22) };
-        float xoff = 41.75f;
-        l0[0].x = xoff - l0[0].x;
-        l0[1].x = xoff - l0[1].x;
-        l1[0].x = xoff - l1[0].x;
-        l1[1].x = xoff - l1[1].x;
-
-        LineRecord local0 = new LineRecord(0, 1, l0);
-        LineRecord local1 = new LineRecord(0, 1, l1);
-
-        if ((local0.IsSame(t0) && local1.IsSame(t1)) ||
-            (local0.IsSame(t1) && local1.IsSame(t0)))
-        {
-            return true;
-        }
-
-        return false;
-    }
-
+    static float EndTolerance = .1f;    
     static bool LineLineTest(in LineRecord l0, in LineRecord l1)
     {
         var diff = l1.center - l0.center;
         var rsum = l0.radius + l1.radius;
-
-        if (is_it(l0, l1))
-        {
-            Debug.Log("Targets");
-        }
 
         if (rsum < .001f)
         {
@@ -129,8 +83,8 @@ public class CourtTriangulaion
 
         t0 = Math.Abs(t0);
         t1 = Math.Abs(t1);
-        float end_tolerance = .1f;
-        if (t1 <= l0.radius - end_tolerance && t0 <= l1.radius - end_tolerance)
+        
+        if (t1 <= l0.radius - EndTolerance && t0 <= l1.radius - EndTolerance)
         {
             return true;
         }
@@ -168,6 +122,31 @@ public class CourtTriangulaion
             foreach (int lineid in keeps)
             {
                 if (LineLineTest(records[lineid], records[i]))
+                {
+                    success = false;
+                    break;
+                }
+
+                float direction;
+                if (records[lineid].idx0 == records[i].idx0 || records[lineid].idx1 == records[i].idx1)
+                {
+                    direction = 1;
+                }
+                else if (records[lineid].idx0 == records[i].idx1 || records[lineid].idx1 == records[i].idx0)
+                {
+                    direction = -1;
+                }
+                else
+                {
+                    continue;
+                }
+                
+                var dp = Vector2.Dot(records[lineid].dir, records[i].dir);
+                dp *= direction;
+                    
+                float angle_cuttoff = (float) Math.Cos(5 * Math.PI / 180);
+                
+                if (dp > angle_cuttoff)
                 {
                     success = false;
                     break;
